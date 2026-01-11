@@ -1,0 +1,82 @@
+const PsiGphConfig = require('../models/PsiGphConfig')
+
+// @desc    Obtener tabla PSI→GPH
+// @route   GET /api/catalogos/psi-gph
+// @access  Private
+exports.getPsiGphTable = async (req, res, next) => {
+  try {
+    let config = await PsiGphConfig.findOne()
+    
+    if (!config) {
+      // Crear tabla por defecto si no existe
+      const defaultTable = [
+        { psi: 16, gph: 3.8 }, { psi: 17, gph: 3.9 }, { psi: 18, gph: 4.0 },
+        { psi: 19, gph: 4.1 }, { psi: 20, gph: 4.3 }, { psi: 21, gph: 4.4 },
+        { psi: 22, gph: 4.5 }, { psi: 23, gph: 4.6 }, { psi: 24, gph: 4.7 },
+        { psi: 25, gph: 4.7 }, { psi: 26, gph: 4.8 }, { psi: 27, gph: 4.9 },
+        { psi: 28, gph: 5.0 }, { psi: 29, gph: 5.1 }, { psi: 30, gph: 5.2 },
+        { psi: 31, gph: 5.3 }, { psi: 32, gph: 5.4 }, { psi: 33, gph: 5.5 },
+        { psi: 34, gph: 5.5 }, { psi: 35, gph: 5.6 }, { psi: 36, gph: 5.7 },
+        { psi: 37, gph: 5.8 }, { psi: 38, gph: 5.9 }, { psi: 39, gph: 5.9 },
+        { psi: 40, gph: 6.0 }, { psi: 41, gph: 6.1 }, { psi: 42, gph: 6.2 },
+        { psi: 43, gph: 6.2 }, { psi: 44, gph: 6.3 }, { psi: 45, gph: 6.4 },
+        { psi: 46, gph: 6.4 }, { psi: 47, gph: 6.5 }, { psi: 48, gph: 6.6 }
+      ]
+      config = await PsiGphConfig.create({ tabla: defaultTable })
+    }
+    
+    res.json({
+      success: true,
+      data: config.tabla
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// @desc    Actualizar tabla PSI→GPH
+// @route   PUT /api/catalogos/psi-gph
+// @access  Private (Admin)
+exports.updatePsiGphTable = async (req, res, next) => {
+  try {
+    const { tabla } = req.body
+    
+    if (!Array.isArray(tabla) || tabla.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'La tabla debe ser un array no vacío'
+      })
+    }
+    
+    // Validar formato
+    for (const entry of tabla) {
+      if (!entry.psi || !entry.gph) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cada entrada debe tener psi y gph'
+        })
+      }
+    }
+    
+    let config = await PsiGphConfig.findOne()
+    
+    if (config) {
+      config.tabla = tabla
+      config.updatedBy = req.user._id
+      await config.save()
+    } else {
+      config = await PsiGphConfig.create({
+        tabla,
+        updatedBy: req.user._id
+      })
+    }
+    
+    res.json({
+      success: true,
+      data: config.tabla,
+      message: 'Tabla PSI→GPH actualizada'
+    })
+  } catch (error) {
+    next(error)
+  }
+}
