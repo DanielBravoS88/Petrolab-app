@@ -67,7 +67,15 @@ export function Alert({ type = 'info', title, message, onClose }) {
 }
 
 // Componente de confirmación
-export function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel }) {
+export function ConfirmDialog({ 
+  isOpen, 
+  title, 
+  message, 
+  confirmText = 'Confirmar',
+  confirmColor = 'bg-red-600 hover:bg-red-700',
+  onConfirm, 
+  onCancel 
+}) {
   if (!isOpen) return null
 
   return (
@@ -79,8 +87,11 @@ export function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel }) {
           <button onClick={onCancel} className="btn-secondary">
             Cancelar
           </button>
-          <button onClick={onConfirm} className="btn-danger">
-            Confirmar
+          <button 
+            onClick={onConfirm} 
+            className={`${confirmColor} text-white px-6 py-3 rounded-lg font-semibold transition-colors`}
+          >
+            {confirmText}
           </button>
         </div>
       </div>

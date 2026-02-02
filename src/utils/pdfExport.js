@@ -95,7 +95,7 @@ export async function exportarCartillaPDF(cartilla) {
   doc.setFont('helvetica', 'normal')
 
   const datosMandante = [
-    ['Tipo:', cartilla.mandante.tipo || '-', 'File N°:', cartilla.mandante.fileNumero || '-'],
+    ['Tipo:', cartilla.mandante.tipo || '-', 'Código de Estación:', cartilla.mandante.fileNumero || '-'],
     ['Nombre Legal:', cartilla.mandante.nombreLegal || '-', 'Descripción:', cartilla.mandante.descripcion || '-']
   ]
 
@@ -203,9 +203,13 @@ export async function exportarCartillaPDF(cartilla) {
     const pruebasData = cartilla.pruebas.map(prueba => [
       prueba.numeroLinea,
       prueba.numeroEstanque,
-      `${prueba.detectorMarca || '-'}\n${prueba.detectorModelo || ''}`,
+      `${prueba.detectorMarca || '-'} ${prueba.detectorModelo || ''}`,
       prueba.detectorTipo,
+      prueba.bombaSumergibleMarca || '-',
       prueba.presionOperacionPSI,
+      prueba.presionVerificacionPSI || '-',
+      prueba.presionDetencionPSI || '-',
+      prueba.presionPruebaPSI || '-',
       prueba.flujoFugaGPH,
       prueba.resultado,
       prueba.observacion || '-'
@@ -213,24 +217,52 @@ export async function exportarCartillaPDF(cartilla) {
 
     doc.autoTable({
       startY: yPos,
-      head: [['N° Línea', 'Estanque', 'Detector', 'Tipo', 'P.Op.\n(PSI)', 'Flujo\n(GPH)', 'Result.', 'Observación']],
+      head: [[
+        'N° Línea', 
+        'Est.', 
+        'Detector', 
+        'Tipo', 
+        'Bomba',
+        'P.Op.\n(PSI)', 
+        'P.Ver.\n(PSI)', 
+        'P.Det.\n(PSI)', 
+        'P.Pru.\n(PSI)', 
+        'Flujo\n(GPH)', 
+        'Result.', 
+        'Obs.'
+      ]],
       body: pruebasData,
       theme: 'grid',
       headStyles: {
         fillColor: [0, 102, 204],
         textColor: [255, 255, 255],
-        fontSize: 8,
-        fontStyle: 'bold'
+        fontSize: 7,
+        fontStyle: 'bold',
+        halign: 'center'
       },
       bodyStyles: {
-        fontSize: 7
+        fontSize: 6,
+        cellPadding: 1.5
       },
       columnStyles: {
-        4: { halign: 'center' },
-        5: { halign: 'center', fontStyle: 'bold' },
-        6: { halign: 'center' }
+        0: { cellWidth: 12, halign: 'center', fontStyle: 'bold' },  // N° Línea
+        1: { cellWidth: 10, halign: 'center' },  // Estanque
+        2: { cellWidth: 20, fontSize: 5 },  // Detector
+        3: { cellWidth: 12, fontSize: 5 },  // Tipo
+        4: { cellWidth: 15, fontSize: 5 },  // Bomba
+        5: { cellWidth: 12, halign: 'center', fillColor: [230, 240, 255], fontStyle: 'bold' },  // P.Op.
+        6: { cellWidth: 12, halign: 'center' },  // P.Ver.
+        7: { cellWidth: 12, halign: 'center' },  // P.Det.
+        8: { cellWidth: 12, halign: 'center' },  // P.Pru.
+        9: { cellWidth: 12, halign: 'center', fontStyle: 'bold', textColor: [0, 102, 204] },  // Flujo
+        10: { cellWidth: 12, halign: 'center' },  // Result.
+        11: { cellWidth: 'auto', fontSize: 5 }  // Obs.
       },
-      margin: { left: 15, right: 15 }
+      margin: { left: 10, right: 10 },
+      styles: {
+        overflow: 'linebreak',
+        cellWidth: 'wrap'
+      }
     })
 
     yPos = doc.lastAutoTable.finalY + 10

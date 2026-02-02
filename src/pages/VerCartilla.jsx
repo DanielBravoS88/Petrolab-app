@@ -84,13 +84,18 @@ function VerCartilla() {
         console.log('Guardando cartilla aprobada:', cartillas[index])
         localStorage.setItem('petrolab_cartillas', JSON.stringify(cartillas))
         
+        // Verificar que se guardó correctamente
+        const verificacion = localStorage.getItem('petrolab_cartillas')
+        console.log('Verificación después de guardar:', JSON.parse(verificacion).find(c => c.id === id)?.estado)
+        
         setCartilla(cartillas[index])
         setAlert({ type: 'success', message: '✅ Cartilla aprobada exitosamente' })
         setShowApprovalDialog(false)
         
-        // Redirigir al dashboard después de 2 segundos
+        // Redirigir al dashboard después de 2 segundos y forzar recarga
         setTimeout(() => {
-          navigate('/')
+          navigate('/', { replace: true })
+          window.location.reload()
         }, 2000)
       } else {
         setAlert({ type: 'error', message: 'Cartilla no encontrada' })
@@ -140,14 +145,19 @@ function VerCartilla() {
         console.log('Guardando cartilla rechazada:', cartillas[index])
         localStorage.setItem('petrolab_cartillas', JSON.stringify(cartillas))
         
+        // Verificar que se guardó correctamente
+        const verificacion = localStorage.getItem('petrolab_cartillas')
+        console.log('Verificación después de guardar:', JSON.parse(verificacion).find(c => c.id === id)?.estado)
+        
         setCartilla(cartillas[index])
         setAlert({ type: 'success', message: '❌ Cartilla rechazada' })
         setShowRejectionDialog(false)
         setComentarioRechazo('')
         
-        // Redirigir al dashboard después de 2 segundos
+        // Redirigir al dashboard después de 2 segundos y forzar recarga
         setTimeout(() => {
-          navigate('/')
+          navigate('/', { replace: true })
+          window.location.reload()
         }, 2000)
       } else {
         setAlert({ type: 'error', message: 'Cartilla no encontrada' })
@@ -168,6 +178,81 @@ function VerCartilla() {
     const puede = cartilla?.estado === 'EN_REVISION'
     console.log('Puede revisar:', puede, '- Estado cartilla:', cartilla?.estado)
     return puede
+  }
+
+  const puedeGestionarEstado = () => {
+    // Solo supervisores y admins pueden gestionar estados
+    return user?.rol === 'SUPERVISOR' || user?.rol === 'ADMIN'
+  }
+
+  const handleCambiarEstado = (nuevoEstado) => {
+    if (!puedeGestionarEstado()) {
+      setAlert({ type: 'error', message: 'No tiene permisos para cambiar el estado' })
+      return
+    }
+
+    try {
+      const stored = localStorage.getItem('petrolab_cartillas')
+      if (!stored) {
+        setAlert({ type: 'error', message: 'No se encontraron cartillas' })
+        return
+      }
+
+      const cartillas = JSON.parse(stored)
+      const index = cartillas.findIndex(c => c.id === id)
+      
+      if (index !== -1) {
+        const comentario = nuevoEstado === 'APROBADA' 
+          ? 'Estado cambiado a APROBADA por supervisor'
+          : nuevoEstado === 'RECHAZADA'
+          ? 'Estado cambiado a RECHAZADA por supervisor'
+          : 'Estado cambiado a EN_REVISION'
+
+        cartillas[index] = {
+          ...cartillas[index],
+          estado: nuevoEstado,
+          updatedAt: new Date().toISOString(),
+          comentariosRevision: [
+            ...(cartillas[index].comentariosRevision || []),
+            {
+              usuario: user?.email,
+              fecha: new Date().toISOString(),
+              accion: nuevoEstado,
+              comentario: comentario
+            }
+          ]
+        }
+
+        // Agregar campos específicos según el estado
+        if (nuevoEstado === 'APROBADA') {
+          cartillas[index].aprobadaPor = user?.email
+          cartillas[index].aprobadaEn = new Date().toISOString()
+        } else if (nuevoEstado === 'RECHAZADA') {
+          cartillas[index].rechazadaPor = user?.email
+          cartillas[index].rechazadaEn = new Date().toISOString()
+        }
+        
+        localStorage.setItem('petrolab_cartillas', JSON.stringify(cartillas))
+        setCartilla(cartillas[index])
+        
+        const mensajes = {
+          'APROBADA': '✅ Cartilla marcada como APROBADA',
+          'RECHAZADA': '❌ Cartilla marcada como RECHAZADA',
+          'EN_REVISION': '🔍 Cartilla marcada como EN_REVISION',
+          'BORRADOR': '📝 Cartilla marcada como BORRADOR'
+        }
+        
+        setAlert({ type: 'success', message: mensajes[nuevoEstado] })
+        
+        // Recargar página después de 2 segundos
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      }
+    } catch (error) {
+      console.error('Error al cambiar estado:', error)
+      setAlert({ type: 'error', message: 'Error al cambiar estado' })
+    }
   }
 
   if (loading) {
@@ -223,6 +308,53 @@ function VerCartilla() {
 
       {alert && (
         <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
+      )}
+
+      {/* Gestión de Estado (Solo Supervisor/Admin) */}
+      {puedeGestionarEstado() && (
+        <Card title="Gestión de Estado">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex-1">
+              <p className="text-gray-600 mb-2">
+                Cambiar el estado de la cartilla manualmente:
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-700">Estado actual:</span>
+                <EstadoBadge estado={cartilla.estado} />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleCambiarEstado('BORRADOR')}
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors text-sm"
+                disabled={cartilla.estado === 'BORRADOR'}
+              >
+                📝 Borrador
+              </button>
+              <button
+                onClick={() => handleCambiarEstado('EN_REVISION')}
+                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold transition-colors text-sm"
+                disabled={cartilla.estado === 'EN_REVISION'}
+              >
+                🔍 En Revisión
+              </button>
+              <button
+                onClick={() => handleCambiarEstado('APROBADA')}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors text-sm"
+                disabled={cartilla.estado === 'APROBADA'}
+              >
+                ✅ Aprobada
+              </button>
+              <button
+                onClick={() => handleCambiarEstado('RECHAZADA')}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors text-sm"
+                disabled={cartilla.estado === 'RECHAZADA'}
+              >
+                ❌ Rechazada
+              </button>
+            </div>
+          </div>
+        </Card>
       )}
 
       {/* Estado y datos básicos */}
@@ -292,7 +424,7 @@ function VerCartilla() {
       <Card title="Datos de Mandante">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <InfoItem label="Tipo" value={cartilla.mandante.tipo} />
-          <InfoItem label="File N°" value={cartilla.mandante.fileNumero} />
+          <InfoItem label="Código de Estación" value={cartilla.mandante.fileNumero} />
           <InfoItem label="Nombre Legal" value={cartilla.mandante.nombreLegal} />
           <InfoItem label="Descripción" value={cartilla.mandante.descripcion} />
         </div>
@@ -345,7 +477,11 @@ function VerCartilla() {
                   <th>Estanque</th>
                   <th>Detector</th>
                   <th>Tipo</th>
+                  <th>Bomba</th>
                   <th>P. Operación (PSI)</th>
+                  <th>P. Verificación (PSI)</th>
+                  <th>P. Detención (PSI)</th>
+                  <th>P. Prueba (PSI)</th>
                   <th>Flujo Fuga (GPH)</th>
                   <th>Resultado</th>
                   <th>Observación</th>
@@ -357,8 +493,12 @@ function VerCartilla() {
                     <td className="font-semibold">{prueba.numeroLinea}</td>
                     <td>{prueba.numeroEstanque}</td>
                     <td className="text-sm">{prueba.detectorMarca} {prueba.detectorModelo}</td>
-                    <td>{prueba.detectorTipo}</td>
-                    <td className="text-center font-mono">{prueba.presionOperacionPSI}</td>
+                    <td className="text-sm">{prueba.detectorTipo}</td>
+                    <td className="text-sm">{prueba.bombaSumergibleMarca || '-'}</td>
+                    <td className="text-center font-mono bg-blue-50 font-semibold">{prueba.presionOperacionPSI}</td>
+                    <td className="text-center font-mono">{prueba.presionVerificacionPSI || '-'}</td>
+                    <td className="text-center font-mono">{prueba.presionDetencionPSI || '-'}</td>
+                    <td className="text-center font-mono">{prueba.presionPruebaPSI || '-'}</td>
                     <td className="text-center font-mono font-bold text-petrolab-blue-600">
                       {prueba.flujoFugaGPH}
                     </td>
@@ -419,6 +559,7 @@ function VerCartilla() {
       {/* Diálogos de confirmación */}
       {showApprovalDialog && (
         <ConfirmDialog
+          isOpen={showApprovalDialog}
           title="Aprobar Cartilla"
           message={`¿Está seguro de aprobar la cartilla UOM ${cartilla.uomNumero}?`}
           confirmText="✅ Aprobar"

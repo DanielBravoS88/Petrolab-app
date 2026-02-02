@@ -2,6 +2,60 @@ import { FormField } from '../UIComponents'
 import { TIPOS_MANDANTE, REGIONES_CHILE } from '../../config/catalogs'
 
 function Step1Instalacion({ formData, updateFormData }) {
+  // Función para formatear RUT automáticamente
+  const formatearRUT = (value) => {
+    // Eliminar todo excepto números y k/K
+    let rut = value.replace(/[^\dkK]/g, '')
+    
+    if (rut.length === 0) return ''
+    
+    // Separar el dígito verificador
+    let dv = rut.slice(-1).toUpperCase()
+    let numero = rut.slice(0, -1)
+    
+    // Si solo hay un caracter, no formatear
+    if (numero.length === 0) return rut
+    
+    // Formatear con puntos
+    numero = numero.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    
+    return `${numero}-${dv}`
+  }
+
+  // Función para formatear teléfono chileno automáticamente
+  const formatearTelefono = (value) => {
+    // Eliminar todo excepto números y el símbolo +
+    let telefono = value.replace(/[^\d+]/g, '')
+    
+    if (telefono.length === 0) return ''
+    
+    // Si no empieza con +, agregar +56
+    if (!telefono.startsWith('+')) {
+      telefono = '+56' + telefono
+    }
+    
+    // Extraer las partes
+    let formatted = telefono.replace(/^\+(\d{2})(\d{0,1})(\d{0,4})(\d{0,4}).*/, (match, p1, p2, p3, p4) => {
+      let result = `+${p1}`
+      if (p2) result += ` ${p2}`
+      if (p3) result += ` ${p3}`
+      if (p4) result += ` ${p4}`
+      return result.trim()
+    })
+    
+    return formatted
+  }
+
+  const handleRUTChange = (value) => {
+    const rutFormateado = formatearRUT(value)
+    handleInstalacionChange('rut', rutFormateado)
+  }
+
+  const handleTelefonoChange = (value) => {
+    const telefonoFormateado = formatearTelefono(value)
+    handleInstalacionChange('telefono', telefonoFormateado)
+  }
+
   const handleInstalacionChange = (field, value) => {
     updateFormData({
       instalacion: {
@@ -66,7 +120,8 @@ function Step1Instalacion({ formData, updateFormData }) {
               className="input-petrolab"
               placeholder="96.810.370-9"
               value={formData.instalacion.rut}
-              onChange={(e) => handleInstalacionChange('rut', e.target.value)}
+              onChange={(e) => handleRUTChange(e.target.value)}
+              maxLength="12"
             />
           </FormField>
 
@@ -116,7 +171,8 @@ function Step1Instalacion({ formData, updateFormData }) {
               className="input-petrolab"
               placeholder="+56 9 1234 5678"
               value={formData.instalacion.telefono}
-              onChange={(e) => handleInstalacionChange('telefono', e.target.value)}
+              onChange={(e) => handleTelefonoChange(e.target.value)}
+              maxLength="17"
             />
           </FormField>
 
@@ -192,7 +248,7 @@ function Step1Instalacion({ formData, updateFormData }) {
             </select>
           </FormField>
 
-          <FormField label="Número de File">
+          <FormField label="Código de Estación">
             <input
               type="text"
               className="input-petrolab"

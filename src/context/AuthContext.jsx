@@ -36,19 +36,19 @@ export function AuthProvider({ children }) {
       {
         id: '1',
         email: 'inspector@petrolab.cl',
-        nombre: 'Juan Pérez',
+        nombre: 'José Cuevas',
         rol: 'OPERADOR'
       },
       {
         id: '2',
         email: 'supervisor@petrolab.cl',
-        nombre: 'María González',
+        nombre: 'Alfredo Jara',
         rol: 'SUPERVISOR'
       },
       {
         id: '3',
         email: 'admin@petrolab.cl',
-        nombre: 'Carlos Admin',
+        nombre: 'Sergio Flores',
         rol: 'ADMIN'
       }
     ]

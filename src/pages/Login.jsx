@@ -70,17 +70,6 @@ function Login() {
             <Alert type="error" message={error} onClose={() => setError('')} />
           )}
 
-          {/* Credenciales de prueba */}
-          {isLogin && (
-            <div className="bg-petrolab-blue-50 border border-petrolab-blue-200 rounded-lg p-4 mb-6 text-sm">
-              <p className="font-semibold text-petrolab-blue-900 mb-2">Credenciales de prueba:</p>
-              <p className="text-petrolab-blue-700">📧 inspector@petrolab.cl</p>
-              <p className="text-petrolab-blue-700">📧 supervisor@petrolab.cl</p>
-              <p className="text-petrolab-blue-700">📧 admin@petrolab.cl</p>
-              <p className="text-petrolab-blue-700 mt-2">🔑 Contraseña: <strong>petrolab123</strong></p>
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div>

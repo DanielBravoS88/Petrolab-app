@@ -1,6 +1,6 @@
 // Catálogos de datos para la aplicación
 
-export const TIPOS_MANDANTE = ['DF', 'ENEX', 'COPEC', 'SHELL', 'PETROBRAS', 'OTRO']
+export const TIPOS_MANDANTE = ['ENEX', 'COPEC', 'ESMAX', 'OTRO']
 
 export const TIPOS_LINEA = [
   'Acero',

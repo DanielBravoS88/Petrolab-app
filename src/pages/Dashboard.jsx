@@ -60,6 +60,50 @@ function Dashboard() {
     }
   }
 
+  const handleExportarDatos = () => {
+    try {
+      const cartillasJSON = JSON.stringify(cartillas, null, 2)
+      const blob = new Blob([cartillasJSON], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `petrolab_cartillas_${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      alert('✅ Datos exportados exitosamente')
+    } catch (error) {
+      console.error('Error al exportar:', error)
+      alert('❌ Error al exportar datos')
+    }
+  }
+
+  const handleImportarDatos = (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result)
+        if (Array.isArray(importedData)) {
+          localStorage.setItem('petrolab_cartillas', JSON.stringify(importedData))
+          setCartillas(importedData)
+          alert(`✅ ${importedData.length} cartillas importadas exitosamente`)
+        } else {
+          alert('❌ Formato de archivo inválido')
+        }
+      } catch (error) {
+        console.error('Error al importar:', error)
+        alert('❌ Error al importar datos')
+      }
+    }
+    reader.readAsText(file)
+    // Reset input
+    event.target.value = ''
+  }
+
   const cartillasFiltradas = cartillas.filter(c => 
     filtroEstado === 'TODAS' || c.estado === filtroEstado
   )
@@ -83,7 +127,7 @@ function Dashboard() {
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-1">Bienvenido, {user?.nombre}</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => {
               setLoading(true)
@@ -94,6 +138,22 @@ function Dashboard() {
           >
             🔄 Recargar
           </button>
+          <button 
+            onClick={handleExportarDatos}
+            className="btn-secondary"
+            title="Exportar todas las cartillas a JSON"
+          >
+            💾 Exportar Datos
+          </button>
+          <label className="btn-secondary cursor-pointer" title="Importar cartillas desde JSON">
+            📂 Importar Datos
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportarDatos}
+              className="hidden"
+            />
+          </label>
           <Link to="/nueva-cartilla" className="btn-petrolab text-center">
             ➕ Nueva Cartilla
           </Link>

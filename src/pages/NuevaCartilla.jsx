@@ -138,17 +138,37 @@ function NuevaCartilla() {
     try {
       const cartillas = JSON.parse(localStorage.getItem('petrolab_cartillas') || '[]')
       
+      // Si el usuario es SUPERVISOR o ADMIN, aprobar directamente
+      const esAprobador = user?.rol === 'SUPERVISOR' || user?.rol === 'ADMIN'
+      const estadoFinal = esAprobador ? ESTADOS_CARTILLA.APROBADA : ESTADOS_CARTILLA.EN_REVISION
+      
       const newCartilla = {
         ...formData,
         id: Date.now().toString(),
-        estado: ESTADOS_CARTILLA.EN_REVISION,
+        estado: estadoFinal,
         updatedAt: new Date().toISOString()
+      }
+      
+      // Si se aprueba directamente, agregar información de aprobación
+      if (esAprobador) {
+        newCartilla.aprobadaPor = user?.email
+        newCartilla.aprobadaEn = new Date().toISOString()
+        newCartilla.comentariosRevision = [{
+          usuario: user?.email,
+          fecha: new Date().toISOString(),
+          accion: 'APROBADA',
+          comentario: 'Cartilla aprobada directamente por supervisor'
+        }]
       }
       
       cartillas.push(newCartilla)
       localStorage.setItem('petrolab_cartillas', JSON.stringify(cartillas))
       
-      setAlert({ type: 'success', message: 'Cartilla enviada a revisión exitosamente' })
+      const mensaje = esAprobador 
+        ? '✅ Cartilla creada y aprobada exitosamente' 
+        : 'Cartilla enviada a revisión exitosamente'
+      
+      setAlert({ type: 'success', message: mensaje })
       
       setTimeout(() => {
         navigate('/')
@@ -288,7 +308,9 @@ function NuevaCartilla() {
             </button>
           ) : (
             <button onClick={handleFinalize} className="btn-petrolab">
-              ✓ Finalizar y Enviar
+              {user?.rol === 'SUPERVISOR' || user?.rol === 'ADMIN' 
+                ? '✓ Finalizar y Aprobar' 
+                : '✓ Finalizar y Enviar'}
             </button>
           )}
         </div>
